@@ -79,7 +79,7 @@
   ;; does not run when this file is required by another module. Documentation:
   ;; http://docs.racket-lang.org/guide/Module_Syntax.html#%28part._main-and-test%29
 
-  (define data (list '("red" 13) '("pink" 23) '("yellow" 12) '("blue" 4)))
+  (define data (list '("red" 13) '("pink" 23) '("yellow" 12) '("blue" 4) '("orange" 7)))
   (define datac (map (λ (d) (first d)) data)) ;; ordered list of colour strings
   (define datav (map (λ (d) (second d)) data)) ;; corresponding ordered list of values
   (define sum (apply + datav)) ;; sum of all values
