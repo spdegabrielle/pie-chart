@@ -44,6 +44,23 @@
   (send path close)
   (send dc draw-path path x y))
 
+;; standard-ring-sector: x y start end inner outer dc
+;; draws a ring sector whose top-left corner is at x,y
+;; start end (radians) inner outer (radius)
+(define (standard-ring-sector x y start end outer inner dc)
+(define (standard-rotation Θ) (+ (- Θ) (π 1/2)))
+  (define standard-start (standard-rotation end))
+  (define standard-end (standard-rotation start))
+  (define diameter (* 2 outer))
+  (define inner-diameter (* 2 inner))
+  (define inset (- outer inner)) ;; needs to be inset by diff between inner and outer
+  (define path (new dc-path%))
+  (send path arc 0 0 diameter diameter standard-start standard-end)
+  (send path arc inset inset inner-diameter inner-diameter standard-end standard-start #false) ;; counter-clockwise
+  (send path close)
+  (send dc draw-path path x y))
+
+
 ;; convert segment values into intervals
 (define (values->cardinals ltb-values)
   (foldl (λ (i init-acc) (append init-acc (list (+ (last init-acc) i)))) '(0) ltb-values))
@@ -70,7 +87,7 @@
   (for/list ([c colours]
              [sweep (get-ranges vs)])
     (send dc set-brush (new brush% [color c]))
-    (ring-sector 3 3 (first sweep) (second sweep) 140 0 dc)))
+    (standard-ring-sector 3 3 (first sweep) (second sweep) 140 0 dc)))
 
 ;; pie-chart-pict
 
