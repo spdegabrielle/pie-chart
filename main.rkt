@@ -1,7 +1,7 @@
 #lang racket/base
 (require pict racket/class racket/draw racket/gui
          (only-in racket/math pi) racket/list/grouping)
-(provide ring-sector π pie-chart)
+(provide ring-sector standard-ring-sector π pie-chart-pict)
 
 
 (module+ test
@@ -82,12 +82,12 @@
 ;; sectors start at π/2 and grow clockwise.
 ;; while pie-charts are traditionally ordered from largest to smallest that is left to the source data.
 ;; vs : values
-(define (pie-chart dc vs #:colours colours)
+(define (pie-chart dc diameter vs #:colours colours)
   (displayln (get-ranges vs))
   (for/list ([c colours]
              [sweep (get-ranges vs)])
     (send dc set-brush (new brush% [color c]))
-    (standard-ring-sector 3 3 (first sweep) (second sweep) 140 0 dc)))
+    (standard-ring-sector 3 3 (first sweep) (second sweep) (/ diameter 2) 0 dc)))
 
 ;; pie-chart-pict
 
@@ -98,13 +98,12 @@
           (send dc set-smoothing 'aligned)
           (send dc set-pen (new pen% [width 1] [color "slategray"]))
           ;; draw the owl
-          (pie-chart dc data #:colours colours)
+          (pie-chart dc diameter data #:colours colours)
           (displayln "draw the owl2")
           (send dc set-brush old-brush)
           (send dc set-pen old-pen))
 
         ) diameter diameter))
-
 
 (module+ test
   ;; Is run when using DrRacket or with `raco test`.
@@ -122,23 +121,20 @@
     (send tdc3 set-smoothing 'aligned)
     (send tdc3 set-pen (new pen% [width 1] [color "slategray"]))
     ;; draw the owl
-    (pie-chart tdc3 '(#(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5)) #:colours '("red" "pink" "green"))
+    (pie-chart tdc3 300 '(#(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5)) #:colours '("red" "pink" "green"))
     
     (send tdc3 set-brush old-brush)
     (send tdc3 set-pen old-pen)
     (make-object image-snip% target3))
 
-
-
   (pie-chart-pict 410 '(#(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5)) #:colours '("orange" "pink" "green"))
+  (pie-chart-pict 210 '(#(Eggs 7.5) #(Bacon 2.5) #(Pancakes 3.5)) #:colours '("red" "green" "blue"))
+  (pie-chart-pict 510 '(#(Eggs 5.5) #(Bacon 4.5) #(Pancakes 3.5)) #:colours '("orange" "pink" "green"))
         
-
   ;; (ring-sector x y start end outer inner dc)
   (define target2 (make-bitmap 400 400  #:backing-scale 2))
   (define tdc2 (new bitmap-dc% [bitmap target2]))
   (send tdc2 set-smoothing 'aligned)
-  (define old-brush (send tdc2 get-brush))
-  (define old-pen (send tdc2 get-pen))
   
   (send tdc2 set-pen (new pen% [width 1] [color "slategray"]))
   (send tdc2 set-brush (new brush% [color "red"]))
@@ -153,13 +149,10 @@
         
   (send tdc2 set-brush (new brush% [color "green"]))
   (ring-sector 3 3 (π 3/6) (π 12/6) 150 160 tdc2)
-        
-  (send tdc2 set-brush old-brush)
-  (send tdc2 set-pen old-pen)
 
   (make-object image-snip% target2)
   
-  ;; polar-area-diagram
+  ;; polar-area-diagram  TODO
   ;; sectors divide the disk/ring evenly 
   #; (polar-area-diagram '(#(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5)) #:colors '("red" "pink" "green"))
 
