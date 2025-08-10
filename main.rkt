@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/class racket/draw racket/gui
+(require pict racket/class racket/draw racket/gui
          (only-in racket/math pi) racket/list/grouping)
 (provide ring-sector π pie-chart)
 
@@ -29,8 +29,6 @@
 
 ;; Code here
 
-
-
 (define (π radians)  (* pi radians))
 
 ;; ring-sector: x y start end inner outer dc
@@ -47,74 +45,105 @@
   (send dc draw-path path x y))
 
 ;; convert segment values into intervals
-(define (cardinals ltb-values)
+(define (values->cardinals ltb-values)
   (foldl (λ (i init-acc) (append init-acc (list (+ (last init-acc) i)))) '(0) ltb-values))
 
-(define (intervals ltb-values)
+(define (cardinals->cardinalpairs ltb-values)
   (windows 2 1 ltb-values))
-  
+
+;; 
+(define (get-ranges data)
+  (define datavalues (map (λ (data-item-vector) (vector-ref data-item-vector 1)) data))
+  (define sum (apply + datavalues))
+  (define datavradians (map (λ (v) (* (π 2) (/ v sum))) datavalues))
+  (cardinals->cardinalpairs (values->cardinals datavradians)))
 
 
-(define (pie-chart dc x y diameter list-of-colour-values)
-  ;; list-of-colour-values --> list-of-colour-sectors
+;; pie-chart : (list-of vectors#(name value))  #:colors (listof colours)
+;; sectors angles are proportional to value , there must be a color for each value
+#; (pie-chart dc '(#(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5)) #:colors '("red" "pink" "green" "orange" "blue"))
+;; sectors start at π/2 and grow clockwise.
+;; while pie-charts are traditionally ordered from largest to smallest that is left to the source data.
+;; vs : values
+(define (pie-chart dc vs #:colours colours)
+  (displayln (get-ranges vs))
+  (for/list ([c colours]
+             [sweep (get-ranges vs)])
+    (send dc set-brush (new brush% [color c]))
+    (ring-sector 3 3 (first sweep) (second sweep) 140 0 dc)))
 
-  ;; draw list of coloursectors 
-  
-  ;(for/list ([]))
+;; pie-chart-pict
 
-  void)
+(define (pie-chart-pict diameter data #:colours colours)
+  (dc (λ (dc dx dy)
+        (let* ([old-brush (send dc get-brush)]
+               [old-pen (send dc get-pen)])
+          (send dc set-smoothing 'aligned)
+          (send dc set-pen (new pen% [width 1] [color "slategray"]))
+          ;; draw the owl
+          (pie-chart dc data #:colours colours)
+          (displayln "draw the owl2")
+          (send dc set-brush old-brush)
+          (send dc set-pen old-pen))
 
+        ) diameter diameter))
 
 
 (module+ test
-  ;; Any code in this `test` submodule runs when this file is run using DrRacket
-  ;; or with `raco test`. The code here does not run when this file is
-  ;; required by another module.
-
+  ;; Is run when using DrRacket or with `raco test`.
+  ;; The code here does not run when this file is required by another module.
   (check-equal? (+ 2 2) 4))
 
 (module+ main
-  ;; (Optional) main submodule. Put code here if you need it to be executed when
-  ;; this file is run using DrRacket or the `racket` executable.  The code here
-  ;; does not run when this file is required by another module. Documentation:
-  ;; http://docs.racket-lang.org/guide/Module_Syntax.html#%28part._main-and-test%29
+  ;; Is run using DrRacket or the `racket` executable.
 
-  (define data (list '("red" 13) '("pink" 23) '("yellow" 12) '("blue" 4) '("orange" 7)))
-  (define datac (map (λ (d) (first d)) data)) ;; ordered list of colour strings
-  (define datav (map (λ (d) (second d)) data)) ;; corresponding ordered list of values
-  (define sum (apply + datav)) ;; sum of all values
-  (define datavradians (map (λ (v) (* (π 2) (/ v sum))) datav)) ;; values as radians
-
-  (define datavfract (map (λ (v)  (/ v sum)) datav)) ;; values as radians
-  
-  (printf "(1) is this 2π?  ~A~N" (apply + datavradians))
-  (printf "(2) sum ~A~N" sum)
-  (printf "(3) datav ~A~N" datav)
-  (printf "(1) datavfract ~A~N" datavfract)
-  (printf "(1) datavradians ~A~N" datavradians)
-  
-  (define ranges (intervals (cardinals datavradians))) ; ordered list of radian pairs
+  ;; drawing
+  (let* ([target3 (make-bitmap 400 400  #:backing-scale 2)]
+         [tdc3 (new bitmap-dc% [bitmap target3])]
+         [old-brush (send tdc3 get-brush)]
+         [old-pen (send tdc3 get-pen)])
+    (send tdc3 set-smoothing 'aligned)
+    (send tdc3 set-pen (new pen% [width 1] [color "slategray"]))
+    ;; draw the owl
+    (pie-chart tdc3 '(#(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5)) #:colours '("red" "pink" "green"))
+    
+    (send tdc3 set-brush old-brush)
+    (send tdc3 set-pen old-pen)
+    (make-object image-snip% target3))
 
 
 
-  
+  (pie-chart-pict 410 '(#(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5)) #:colours '("orange" "pink" "green"))
+        
+
+  ;; (ring-sector x y start end outer inner dc)
   (define target2 (make-bitmap 400 400  #:backing-scale 2))
   (define tdc2 (new bitmap-dc% [bitmap target2]))
   (send tdc2 set-smoothing 'aligned)
   (define old-brush (send tdc2 get-brush))
   (define old-pen (send tdc2 get-pen))
+  
   (send tdc2 set-pen (new pen% [width 1] [color "slategray"]))
-
-  (for/list ([c datac]
-             [sweep ranges])
-    (send tdc2 set-brush (new brush% [color c]))
-    (ring-sector 3 3 (first sweep) (second sweep) 140 0 tdc2))
-
+  (send tdc2 set-brush (new brush% [color "red"]))
+  (ring-sector 3 3 (π 0/6) (π 7/6) 150 100 tdc2)
         
-  ;(send tdc2 set-brush (new brush% [color "green"]))
-  ;(ring-sector 3 3 (π 9/6) (π 12/6) 150 160 tdc2)
+  (send tdc2 set-brush (new brush% [color "blue"]))
+  (ring-sector 3 3 (π 7/6) (π 9/6) 140 100 tdc2)
+
+          
+  (send tdc2 set-brush (new brush% [color "yellow"]))
+  (ring-sector 3 3 (π 11/6) (π 1/2) 140 10 tdc2)
+        
+  (send tdc2 set-brush (new brush% [color "green"]))
+  (ring-sector 3 3 (π 3/6) (π 12/6) 150 160 tdc2)
         
   (send tdc2 set-brush old-brush)
   (send tdc2 set-pen old-pen)
 
-  (make-object image-snip% target2))
+  (make-object image-snip% target2)
+  
+  ;; polar-area-diagram
+  ;; sectors divide the disk/ring evenly 
+  #; (polar-area-diagram '(#(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5)) #:colors '("red" "pink" "green"))
+
+  )
