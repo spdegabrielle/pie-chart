@@ -1,8 +1,7 @@
 #lang racket/base
 (require pict racket/class racket/draw racket/gui
          (only-in racket/math pi) racket/list/grouping)
-(provide ring-sector standard-ring-sector π pie-chart-pict)
-
+(provide ring-sector standard-ring-sector π pie-chart-pict get-ranges)
 
 (module+ test
   (require rackunit))
