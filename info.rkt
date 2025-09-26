@@ -1,6 +1,6 @@
 #lang info
 (define collection "pie-chart")
-(define deps '("base" "draw-lib" "gui-lib" "pict"))
+(define deps '("base" "draw-lib" "gui-lib" "pict" "sequence-tools-lib"))
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 (define scribblings '(("scribblings/pie-chart.scrbl" ())))
 (define pkg-desc "Draw a pie chart as a pict")
